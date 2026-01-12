@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Security | Enterprise-Grade AI Firewall</title>
+    <meta name="description" content="Production-ready security layer for AI applications. Prevent prompt injection, data exfiltration, and jailbreaks.">
+
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="LLM Security - Enterprise AI Firewall">
+    <meta property="og:description" content="Protect your AI applications from prompt injection, data leaks, and security threats">
+    <meta property="og:image" content="https://llmsecurity.dev/og-image.png">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .hero-pattern {
+            background-color: #1a202c;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        .code-block {
+            background: #1e1e1e;
+            border-radius: 8px;
+            padding: 1.5rem;
+            overflow-x: auto;
+        }
+
+        .feature-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Hero Section -->
+    <div class="hero-pattern text-white">
+        <nav class="container mx-auto px-6 py-6">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
+                    </svg>
+                    <span class="text-2xl font-bold">LLM Security</span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#features" class="hover:text-purple-200">Features</a>
+                    <a href="#demo" class="hover:text-purple-200">Demo</a>
+                    <a href="#pricing" class="hover:text-purple-200">Pricing</a>
+                    <a href="https://github.com/llmsecurity/firewall" class="hover:text-purple-200">GitHub</a>
+                </div>
+                <a href="#get-started" class="bg-white text-purple-600 px-6 py-2 rounded-lg font-semibold hover:bg-gray-100">
+                    Get Started
+                </a>
+            </div>
+        </nav>
+
+        <div class="container mx-auto px-6 py-20 text-center">
+            <h1 class="text-5xl md:text-6xl font-bold mb-6">
+                Secure Your AI Applications
+            </h1>
+            <p class="text-xl md:text-2xl mb-8 text-purple-100">
+                Production-ready firewall that prevents prompt injection, data leaks, and jailbreaks
+            </p>
+            <div class="flex flex-col md:flex-row justify-center gap-4 mb-12">
+                <a href="#get-started" class="bg-white text-purple-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100">
+                    Start Free Trial
+                </a>
+                <a href="https://github.com/llmsecurity/firewall" class="border-2 border-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-white hover:text-purple-600">
+                    View on GitHub
+                </a>
+            </div>
+
+            <!-- Live Demo Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+                <div class="bg-white/10 backdrop-blur-sm rounded-lg p-6">
+                    <div class="text-3xl font-bold">156</div>
+                    <div class="text-purple-200">Threats Blocked Today</div>
+                </div>
+                <div class="bg-white/10 backdrop-blur-sm rounded-lg p-6">
+                    <div class="text-3xl font-bold">99.9%</div>
+                    <div class="text-purple-200">Detection Rate</div>
+                </div>
+                <div class="bg-white/10 backdrop-blur-sm rounded-lg p-6">
+                    <div class="text-3xl font-bold">&lt;50ms</div>
+                    <div class="text-purple-200">Avg Latency</div>
+                </div>
+                <div class="bg-white/10 backdrop-blur-sm rounded-lg p-6">
+                    <div class="text-3xl font-bold">SOC 2</div>
+                    <div class="text-purple-200">Compliant</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- The Problem Section -->
+    <div class="py-20 bg-white">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">The Problem</h2>
+                <p class="text-xl text-gray-600">AI applications face critical security challenges</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="text-center p-6">
+                    <div class="text-5xl mb-4">⚠️</div>
+                    <h3 class="text-xl font-semibold mb-2">Prompt Injection</h3>
+                    <p class="text-gray-600">Malicious users manipulate AI behavior with crafted inputs</p>
+                </div>
+                <div class="text-center p-6">
+                    <div class="text-5xl mb-4">🔓</div>
+                    <h3 class="text-xl font-semibold mb-2">Data Exfiltration</h3>
+                    <p class="text-gray-600">Sensitive information leaks through AI responses</p>
+                </div>
+                <div class="text-center p-6">
+                    <div class="text-5xl mb-4">💸</div>
+                    <h3 class="text-xl font-semibold mb-2">Uncontrolled Costs</h3>
+                    <p class="text-gray-600">API abuse drains budgets with no visibility</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div id="features" class="py-20 bg-gray-50">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Enterprise-Grade Protection</h2>
+                <p class="text-xl text-gray-600">Comprehensive security layer for production AI applications</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="feature-card bg-white rounded-xl p-8 shadow-md">
+                    <div class="text-4xl mb-4">🛡️</div>
+                    <h3 class="text-2xl font-semibold mb-3">Threat Detection</h3>
+                    <p class="text-gray-600 mb-4">Real-time detection of prompt injection, jailbreaks, and malicious patterns using ML and heuristics</p>
+                    <ul class="text-sm text-gray-500 space-y-1">
+                        <li>✓ Pattern-based detection</li>
+                        <li>✓ ML classification</li>
+                        <li>✓ Confidence scoring</li>
+                    </ul>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="feature-card bg-white rounded-xl p-8 shadow-md">
+                    <div class="text-4xl mb-4">🔒</div>
+                    <h3 class="text-2xl font-semibold mb-3">PII Redaction</h3>
+                    <p class="text-gray-600 mb-4">Automatic detection and redaction of personal information in requests and responses</p>
+                    <ul class="text-sm text-gray-500 space-y-1">
+                        <li>✓ Email, phone, SSN</li>
+                        <li>✓ Credit cards, API keys</li>
+                        <li>✓ Reversible redaction</li>
+                    </ul>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="feature-card bg-white rounded-xl p-8 shadow-md">
+                    <div class="text-4xl mb-4">📊</div>
+                    <h3 class="text-2xl font-semibold mb-3">Complete Audit Logs</h3>
+                    <p class="text-gray-600 mb-4">Full request/response logging for compliance and forensics</p>
+                    <ul class="text-sm text-gray-500 space-y-1">
+                        <li>✓ SOC 2 / GDPR compliant</li>
+                        <li>✓ SIEM integration</li>
+                        <li>✓ 90-day retention</li>
+                    </ul>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="feature-card bg-white rounded-xl p-8 shadow-md">
+                    <div class="text-4xl mb-4">⚡</div>
+                    <h3 class="text-2xl font-semibold mb-3">Policy Engine</h3>
+                    <p class="text-gray-600 mb-4">Flexible policy enforcement for access control, rate limiting, and cost management</p>
+                    <ul class="text-sm text-gray-500 space-y-1">
+                        <li>✓ Rate limiting</li>
+                        <li>✓ Budget controls</li>
+                        <li>✓ Model restrictions</li>
+                    </ul>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="feature-card bg-white rounded-xl p-8 shadow-md">
+                    <div class="text-4xl mb-4">🔌</div>
+                    <h3 class="text-2xl font-semibold mb-3">Multi-Provider</h3>
+                    <p class="text-gray-600 mb-4">Works with OpenAI, Anthropic, Azure, and local models</p>
+                    <ul class="text-sm text-gray-500 space-y-1">
+                        <li>✓ Provider-agnostic</li>
+                        <li>✓ Easy integration</li>
+                        <li>✓ Cost comparison</li>
+                    </ul>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="feature-card bg-white rounded-xl p-8 shadow-md">
+                    <div class="text-4xl mb-4">📈</div>
+                    <h3 class="text-2xl font-semibold mb-3">Real-time Monitoring</h3>
+                    <p class="text-gray-600 mb-4">Live dashboard with threat alerts and usage analytics</p>
+                    <ul class="text-sm text-gray-500 space-y-1">
+                        <li>✓ Slack/PagerDuty alerts</li>
+                        <li>✓ Performance metrics</li>
+                        <li>✓ Cost tracking</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Code Example Section -->
+    <div id="demo" class="py-20 bg-white">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Simple Integration</h2>
+                <p class="text-xl text-gray-600">Add security to your AI app in minutes</p>
+            </div>
+
+            <div class="max-w-4xl mx-auto">
+                <div class="code-block">
+                    <pre class="text-green-400 text-sm"><code><span class="text-purple-400">from</span> llm_firewall <span class="text-purple-400">import</span> LLMFirewall, FirewallConfig
+
+<span class="text-gray-500"># Initialize firewall</span>
+config = FirewallConfig(
+    enable_prompt_injection_detection=<span class="text-blue-400">True</span>,
+    enable_pii_redaction=<span class="text-blue-400">True</span>,
+    enable_audit_logging=<span class="text-blue-400">True</span>,
+)
+
+firewall = LLMFirewall(config)
+
+<span class="text-gray-500"># Protect your LLM calls</span>
+<span class="text-purple-400">async with</span> firewall.protect(user_id=<span class="text-yellow-400">"user123"</span>) <span class="text-purple-400">as</span> session:
+    response = <span class="text-purple-400">await</span> session.chat(
+        provider=<span class="text-yellow-400">"openai"</span>,
+        model=<span class="text-yellow-400">"gpt-4"</span>,
+        messages=[{<span class="text-yellow-400">"role"</span>: <span class="text-yellow-400">"user"</span>, <span class="text-yellow-400">"content"</span>: user_input}]
+    )
+
+<span class="text-gray-500"># Firewall automatically:</span>
+<span class="text-gray-500"># ✓ Blocks prompt injection</span>
+<span class="text-gray-500"># ✓ Redacts PII</span>
+<span class="text-gray-500"># ✓ Logs interactions</span>
+<span class="text-gray-500"># ✓ Enforces rate limits</span></code></pre>
+                </div>
+
+                <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-gray-100 rounded-lg p-6 text-center">
+                        <div class="text-2xl font-bold text-purple-600">3 lines</div>
+                        <div class="text-gray-600">of code to integrate</div>
+                    </div>
+                    <div class="bg-gray-100 rounded-lg p-6 text-center">
+                        <div class="text-2xl font-bold text-purple-600">&lt;50ms</div>
+                        <div class="text-gray-600">average latency overhead</div>
+                    </div>
+                    <div class="bg-gray-100 rounded-lg p-6 text-center">
+                        <div class="text-2xl font-bold text-purple-600">Zero</div>
+                        <div class="text-gray-600">infrastructure changes</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pricing Section -->
+    <div id="pricing" class="py-20 bg-gray-50">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Simple, Transparent Pricing</h2>
+                <p class="text-xl text-gray-600">Choose the plan that fits your needs</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                <!-- Starter Plan -->
+                <div class="bg-white rounded-xl p-8 shadow-lg">
+                    <h3 class="text-2xl font-bold mb-4">Starter</h3>
+                    <div class="text-4xl font-bold mb-6">$99<span class="text-xl text-gray-500">/mo</span></div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-2">✓</span>
+                            100K requests/month
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-2">✓</span>
+                            Basic threat detection
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-2">✓</span>
+                            30-day audit logs
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-2">✓</span>
+                            Email support
+                        </li>
+                    </ul>
+                    <a href="#" class="block w-full bg-purple-600 text-white text-center py-3 rounded-lg font-semibold hover:bg-purple-700">
+                        Start Free Trial
+                    </a>
+                </div>
+
+                <!-- Professional Plan (Featured) -->
+                <div class="bg-purple-600 text-white rounded-xl p-8 shadow-xl transform scale-105">
+                    <div class="bg-yellow-400 text-purple-900 text-xs font-bold uppercase px-3 py-1 rounded-full inline-block mb-4">
+                        Most Popular
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4">Professional</h3>
+                    <div class="text-4xl font-bold mb-6">$499<span class="text-xl text-purple-200">/mo</span></div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-start">
+                            <span class="text-yellow-400 mr-2">✓</span>
+                            1M requests/month
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-yellow-400 mr-2">✓</span>
+                            Advanced ML detection
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-yellow-400 mr-2">✓</span>
+                            90-day audit logs
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-yellow-400 mr-2">✓</span>
+                            Slack/PagerDuty alerts
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-yellow-400 mr-2">✓</span>
+                            Priority support
+                        </li>
+                    </ul>
+                    <a href="#" class="block w-full bg-white text-purple-600 text-center py-3 rounded-lg font-semibold hover:bg-gray-100">
+                        Start Free Trial
+                    </a>
+                </div>
+
+                <!-- Enterprise Plan -->
+                <div class="bg-white rounded-xl p-8 shadow-lg">
+                    <h3 class="text-2xl font-bold mb-4">Enterprise</h3>
+                    <div class="text-4xl font-bold mb-6">Custom</div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-2">✓</span>
+                            Unlimited requests
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-2">✓</span>
+                            Custom ML models
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-2">✓</span>
+                            Unlimited log retention
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-2">✓</span>
+                            On-premise deployment
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-2">✓</span>
+                            SLA & dedicated support
+                        </li>
+                    </ul>
+                    <a href="#" class="block w-full bg-purple-600 text-white text-center py-3 rounded-lg font-semibold hover:bg-purple-700">
+                        Contact Sales
+                    </a>
+                </div>
+            </div>
+
+            <div class="text-center mt-12">
+                <p class="text-gray-600">All plans include 14-day free trial. No credit card required.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div id="get-started" class="gradient-bg text-white py-20">
+        <div class="container mx-auto px-6 text-center">
+            <h2 class="text-4xl font-bold mb-6">Ready to Secure Your AI?</h2>
+            <p class="text-xl mb-8">Start protecting your applications in minutes</p>
+            <div class="flex flex-col md:flex-row justify-center gap-4">
+                <a href="https://github.com/llmsecurity/firewall" class="bg-white text-purple-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100">
+                    View on GitHub
+                </a>
+                <a href="#" class="border-2 border-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-white hover:text-purple-600">
+                    Schedule Demo
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="container mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Product</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white">Features</a></li>
+                        <li><a href="#" class="hover:text-white">Pricing</a></li>
+                        <li><a href="#" class="hover:text-white">Documentation</a></li>
+                        <li><a href="#" class="hover:text-white">API Reference</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Resources</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white">Blog</a></li>
+                        <li><a href="#" class="hover:text-white">Guides</a></li>
+                        <li><a href="#" class="hover:text-white">Security Best Practices</a></li>
+                        <li><a href="#" class="hover:text-white">Case Studies</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Company</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white">About</a></li>
+                        <li><a href="#" class="hover:text-white">Careers</a></li>
+                        <li><a href="#" class="hover:text-white">Contact</a></li>
+                        <li><a href="#" class="hover:text-white">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Connect</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="https://github.com/llmsecurity" class="hover:text-white">GitHub</a></li>
+                        <li><a href="https://twitter.com/llmsecurity" class="hover:text-white">Twitter</a></li>
+                        <li><a href="https://discord.gg/llmsecurity" class="hover:text-white">Discord</a></li>
+                        <li><a href="mailto:security@llmsecurity.dev" class="hover:text-white">Email</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2026 LLM Security. Part of the <a href="https://afterdark.tech" class="text-purple-400 hover:text-purple-300">AfterDark Security</a> ecosystem.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,335 @@
+Below are high-leverage macOS security product ideas that are actually needed, realistically buildable, and not already solved well. I’ll flag why it’s needed, why it doesn’t exist, and why Go is a good fit for each.
+
+1. macOS “System Call Firewall” (User-Space, Auditable)
+🔴 This does not really exist today in a usable form.
+
+
+https://phoenixnap.com/kb/wp-content/uploads/2023/08/system-calls-cpu-registers.png
+
+https://jhftss.github.io/res/2024-11-7-A-New-Era-of-macOS-Sandbox-Escapes/image-20241019161759137.png
+
+https://upload.wikimedia.org/wikipedia/commons/8/83/DTrace_on_Windows_v10.0.19041.1_1115x966.png
+4
+What it is
+A policy-driven runtime guard that:
+
+Observes real system calls (file access, exec, network, kext attempts)
+
+Enforces allow/deny rules per binary
+
+Works without MDM, without kernel extensions
+
+Think:
+
+binary: /Applications/Slack.app
+rules:
+  - allow: network:443
+  - deny: file:/Users/*/.ssh/*
+Why it’s needed
+macOS sandboxing is coarse and app-store-only
+
+Endpoint Security Framework exists, but tools using it are:
+
+Corporate EDRs
+
+Closed source
+
+Overkill for individuals/devs
+
+Why it doesn’t exist
+ES Framework is painful
+
+Apple discourages low-level tools
+
+Most vendors target enterprise $$$
+
+Why Go works
+Good concurrency for event streams
+
+Can statically compile helper binaries
+
+Perfect for policy engines + agents
+
+Differentiator:
+🔹 Readable security policies for macOS processes
+
+2. macOS Supply-Chain Integrity Monitor (Dev-Focused)
+🔴 Huge blind spot right now.
+
+
+https://cdn.osxdaily.com/wp-content/uploads/2016/03/check-code-signing-app-mac-os-x.jpg
+
+https://eclecticlight.co/wp-content/uploads/2021/12/basicappstructure.jpg
+
+https://www.macobserver.com/wp-content/uploads/2018/05/LaunchAgents-List.jpg
+4
+What it is
+A daemon that:
+
+Watches Homebrew, npm, pip, cargo, go install
+
+Tracks:
+
+Binary hashes
+
+Code-signing identity changes
+
+Post-install scripts
+
+Alerts when:
+
+A package installs a new LaunchAgent
+
+A signed binary suddenly changes signer
+
+A dependency drops unsigned binaries
+
+Why it’s needed
+Most macOS malware arrives via:
+
+Brew
+
+Curl | bash
+
+Dev toolchains
+
+No tool shows “what changed” over time
+
+Why it doesn’t exist
+Security tools ignore dev workflows
+
+Package managers don’t want responsibility
+
+Hard to unify ecosystems
+
+Why Go
+Cross-toolchain parsing
+
+File integrity + hashing performance
+
+Single binary daemon + CLI
+
+Differentiator:
+🔹 Git-style history for system changes
+
+3. Launch Persistence Inspector (macOS Backdoor Detector)
+🔴 Shockingly bad tooling here today.
+
+
+https://www.macobserver.com/wp-content/uploads/2018/05/LaunchAgents-List.jpg
+
+https://macblog.org/processed_images/login-items-interpretter.46f9b17adc7c9926.webp
+
+https://miro.medium.com/v2/resize%3Afit%3A1400/1%2A8DLnqnjzBbCQtMKTiX97Fg.png
+What it is
+A tool that:
+
+Enumerates every persistence vector:
+
+LaunchAgents / LaunchDaemons
+
+Login Items
+
+Cron / At
+
+Kernel extensions
+
+ES plugins
+
+Scores entries based on:
+
+Unsigned binaries
+
+Obfuscated paths
+
+Network beacons
+
+Explains in plain English:
+
+“This binary launches at login, contacts 3 IPs, and was installed silently.”
+
+Why it’s needed
+macOS malware = persistence abuse
+
+Current tools:
+
+ls ~/Library/LaunchAgents
+
+Or enterprise EDR dashboards
+
+Why it doesn’t exist
+Apple hides much of this in UI
+
+Requires deep system knowledge
+
+Hard to explain simply
+
+Why Go
+Fast filesystem crawling
+
+Plist parsing
+
+Static analysis pipelines
+
+Differentiator:
+🔹 macOS persistence explained, not just listed
+
+4. Personal Endpoint Security Timeline (Time-Machine for Security)
+🔴 Extremely powerful, almost no consumer tools do this.
+
+
+https://eclecticlight.co/wp-content/uploads/2018/03/mul101.jpg?w=940
+
+https://miro.medium.com/1%2AG4cSAcD6wJvjlZ-_e1q0Bg.png
+
+https://elservicecentre.com/wp-content/uploads/2025/06/macos-history-timeline.webp
+What it is
+A local-only service that builds a security timeline:
+
+App installs
+
+Permission prompts
+
+New binaries
+
+Network access grants
+
+USB insertions
+
+Then lets you ask:
+
+“What changed right before my mic turned on?”
+
+Why it’s needed
+macOS logs are unreadable
+
+Users discover compromise after the fact
+
+No forensic replay tools for individuals
+
+Why it doesn’t exist
+Logging is fragmented
+
+UI is hard
+
+Not enterprise-profitable
+
+Why Go
+Event ingestion
+
+Time-series indexing
+
+gRPC / local web UI
+
+Differentiator:
+🔹 “What changed?” answered instantly
+
+5. macOS Permission Abuse Monitor (Post-Grant Behavior)
+🔴 Apple does not monitor this at all.
+
+
+https://www.sentinelone.com/wp-content/uploads/labs/2021/07/image3.jpg
+
+https://support.listeninc.com/hc/article_attachments/360030064952/Untitled.png
+
+https://www.macbartender.com/Screen-Recording-Permission/ScreenRecordingPermission.png
+What it is
+Monitors apps after permission is granted:
+
+Camera usage frequency
+
+Mic activation patterns
+
+Screen recording triggers
+
+Accessibility abuse
+
+Flags:
+
+Background activation
+
+Off-hours usage
+
+Silent behavior changes
+
+Why it’s needed
+Permission prompt ≠ safety
+
+Malware waits weeks before abusing access
+
+No alerts after grant
+
+Why it doesn’t exist
+Apple assumes user consent = trust
+
+Requires correlation over time
+
+Why Go
+Long-running lightweight daemon
+
+Event correlation
+
+Minimal memory footprint
+
+Differentiator:
+🔹 Trust decay detection
+
+6. Dev-First “Explain This Binary” Tool
+🔴 Useful and very viral.
+
+
+https://alexdremov.me/content/images/2022/10/6XLCD.gif
+
+https://developer.apple.com/library/archive/qa/qa1798/Art/qa1798_entitlementsReview.png
+
+https://i.sstatic.net/2Hm5T.png
+What it is
+CLI tool:
+
+explain-bin ./mystery_binary
+Outputs:
+
+Who signed it
+
+Entitlements
+
+Network behavior
+
+Persistence attempts
+
+Known malware patterns (heuristic, not signature)
+
+Why it’s needed
+Developers constantly download random tools
+
+VirusTotal is cloud-based & privacy-hostile
+
+No local explainers exist
+
+Why Go
+Mach-O parsing
+
+Static analysis
+
+CLI UX excellence
+
+Differentiator:
+🔹 Human-readable trust report
+
+Which Idea Has the Best “This Should Exist” Energy?
+Top 3 if you want real impact:
+
+System Call Firewall (user-space)
+
+Supply-Chain Integrity Monitor
+
+Persistence Inspector
+
+If you want:
+
+Indie SaaS → Supply-chain monitor
+
+Open-source credibility → Persistence inspector
+
+Hardcore technical flex → Syscall firewall
+
