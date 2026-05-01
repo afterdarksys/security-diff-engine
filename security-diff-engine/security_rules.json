@@ -1,0 +1,166 @@
+{
+  "rules": [
+    {
+      "id": "PY_RCE_EVAL",
+      "description": "Use of eval() detected in Python",
+      "pattern": "\\beval\\s*\\(",
+      "type": "vulnerability",
+      "risk_points": 20,
+      "severity": "critical",
+      "languages": [".py"]
+    },
+    {
+      "id": "PY_RCE_EXEC",
+      "description": "Use of exec() detected in Python",
+      "pattern": "\\bexec\\s*\\(",
+      "type": "vulnerability",
+      "risk_points": 20,
+      "severity": "critical",
+      "languages": [".py"]
+    },
+    {
+      "id": "PY_RCE_OS_SYSTEM",
+      "description": "Use of os.system() detected",
+      "pattern": "\\bos\\.system\\s*\\(",
+      "type": "vulnerability",
+      "risk_points": 20,
+      "severity": "critical",
+      "languages": [".py"]
+    },
+    {
+      "id": "PY_RCE_SUBPROCESS_SHELL",
+      "description": "Subprocess with shell=True detected",
+      "pattern": "subprocess\\.(Popen|call|run)\\(.*shell\\s*=\\s*True",
+      "type": "vulnerability",
+      "risk_points": 20,
+      "severity": "critical",
+      "languages": [".py"]
+    },
+    {
+      "id": "PY_INSECURE_DESERIALIZATION",
+      "description": "Insecure deserialization (pickle) detected",
+      "pattern": "\\bpickle\\.loads\\s*\\(",
+      "type": "vulnerability",
+      "risk_points": 15,
+      "severity": "high",
+      "languages": [".py"]
+    },
+    {
+      "id": "SQLI_FSTRING",
+      "description": "Potential SQL Injection (string formatting in SQL)",
+      "pattern": "(?i)[\"'].*(SELECT|INSERT|UPDATE|DELETE).*{.*}[\"']",
+      "type": "vulnerability",
+      "risk_points": 15,
+      "severity": "high",
+      "languages": [".py", ".go", ".js", ".ts"]
+    },
+    {
+      "id": "JS_RCE_EVAL",
+      "description": "Use of eval() detected in JS/TS",
+      "pattern": "\\beval\\s*\\(",
+      "type": "vulnerability",
+      "risk_points": 20,
+      "severity": "critical",
+      "languages": [".js", ".ts", ".jsx", ".tsx"]
+    },
+    {
+      "id": "JS_XSS_REACT",
+      "description": "Potential XSS (dangerouslySetInnerHTML)",
+      "pattern": "\\bdangerouslySetInnerHTML\\b",
+      "type": "vulnerability",
+      "risk_points": 15,
+      "severity": "high",
+      "languages": [".js", ".ts", ".jsx", ".tsx"]
+    },
+    {
+      "id": "JS_RCE_EXEC",
+      "description": "Use of child_process.exec() detected",
+      "pattern": "\\bexec\\s*\\(",
+      "type": "vulnerability",
+      "risk_points": 20,
+      "severity": "critical",
+      "languages": [".js", ".ts"]
+    },
+    {
+      "id": "C_UNSAFE_FUNCTIONS",
+      "description": "Use of unsafe C string function (e.g. strcpy, sprintf)",
+      "pattern": "\\b(strcpy|strcat|sprintf|gets)\\b\\s*\\(",
+      "type": "vulnerability",
+      "risk_points": 20,
+      "severity": "high",
+      "languages": [".c", ".cpp", ".h", ".hpp"]
+    },
+    {
+      "id": "GO_UNHANDLED_ERROR",
+      "description": "Potential unhandled error in Go (ignoring return value)",
+      "pattern": "_\\s*,\\s*err\\s*:=",
+      "type": "vulnerability",
+      "risk_points": 10,
+      "severity": "medium",
+      "languages": [".go"]
+    },
+    {
+      "id": "GO_UNSAFE_IMPORT",
+      "description": "Importing unsafe package in Go",
+      "pattern": "import\\s+.*\"unsafe\"",
+      "type": "vulnerability",
+      "risk_points": 15,
+      "severity": "high",
+      "languages": [".go"]
+    },
+    {
+      "id": "HARDCODED_SECRET_AWS",
+      "description": "Hardcoded AWS Access Key",
+      "pattern": "(AKIA[0-9A-Z]{16})",
+      "type": "vulnerability",
+      "risk_points": 25,
+      "severity": "critical",
+      "languages": []
+    },
+    {
+      "id": "HARDCODED_PASSWORD",
+      "description": "Hardcoded Password",
+      "pattern": "(?i)(password|passwd|pwd|secret|token|api_key)\\s*[:=]\\s*['\"][^'\"]{5,}['\"]",
+      "type": "vulnerability",
+      "risk_points": 15,
+      "severity": "high",
+      "languages": []
+    },
+    {
+      "id": "EVIL_REGEX_NESTED",
+      "description": "Potential ReDoS (nested quantifiers)",
+      "pattern": "(\\([^\\)]+\\+[*+]\\)|\\([^\\)]+\\*[*+]\\))",
+      "type": "vulnerability",
+      "risk_points": 15,
+      "severity": "high",
+      "languages": []
+    },
+    {
+      "id": "PROT_CSRF",
+      "description": "CSRF Protection",
+      "pattern": "(@csrf_protect|csrf_token|csurf\\(\\))",
+      "type": "protection",
+      "risk_points": -5,
+      "severity": "low",
+      "languages": [".py", ".js", ".ts"]
+    },
+    {
+      "id": "PROT_LOGIN",
+      "description": "Authentication Required",
+      "pattern": "(@login_required|isAuthenticated|jwt\\.verify)",
+      "type": "protection",
+      "risk_points": -10,
+      "severity": "medium",
+      "languages": []
+    },
+    {
+      "id": "PROT_ESCAPE",
+      "description": "HTML Escaping",
+      "pattern": "\\b(escape|html\\.escape|sanitizeHtml)\\s*\\(",
+      "type": "protection",
+      "risk_points": -5,
+      "severity": "low",
+      "languages": []
+    }
+  ]
+}

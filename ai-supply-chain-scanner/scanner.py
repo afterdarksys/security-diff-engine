@@ -1,343 +1,422 @@
 #!/usr/bin/env python3
 """
-AI Supply-Chain Security Scanner
-=================================
-
-Goes beyond SBOMs to provide intelligence-driven supply chain analysis:
-- Analyzes repo behavior, not just packages
-- Scores maintainer trust & bus factor
-- Detects commit anomalies (AI-generated, obfuscated diffs)
-- Identifies dependency hijack likelihood
-- Calculates transitive dependency blast radius
-- Detects "weaponized open-source" patterns
+Enterprise Endpoint SCRM & Vulnerability Scanner
+================================================
+Focuses on Endpoint Software Supply Chain, EOL tracking, 
+and vulnerability mapping.
 """
 
 import json
-import subprocess
-import re
+import sys
+import os
+import sqlite3
+import argparse
+import urllib.request
+import urllib.error
+import urllib.parse
 from typing import Dict, List, Any
 from datetime import datetime
-import hashlib
+import platform
 
+class DatabaseManager:
+    def __init__(self, db_path: str):
+        self.db_path = db_path
+        self.conn = None
 
-class SupplyChainScanner:
-    """AI-powered supply chain security scanner"""
+    def connect(self):
+        self.conn = sqlite3.connect(self.db_path)
+        self.conn.row_factory = sqlite3.Row
 
-    def __init__(self, repo_path: str):
-        self.repo_path = repo_path
-        self.risk_score = 0
+    def init_db(self):
+        self.connect()
+        cursor = self.conn.cursor()
+        # Schema
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS assets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            hostname TEXT,
+            os_info TEXT,
+            last_scan TIMESTAMP
+        )''')
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS software (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            asset_id INTEGER,
+            name TEXT,
+            version TEXT,
+            publisher TEXT,
+            is_licensed BOOLEAN,
+            install_path TEXT,
+            FOREIGN KEY(asset_id) REFERENCES assets(id)
+        )''')
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS eol_status (
+            software_id INTEGER,
+            is_eol BOOLEAN,
+            eol_date TEXT,
+            latest_version TEXT,
+            FOREIGN KEY(software_id) REFERENCES software(id)
+        )''')
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS vulnerabilities (
+            software_id INTEGER,
+            cve_id TEXT,
+            severity TEXT,
+            description TEXT,
+            FOREIGN KEY(software_id) REFERENCES software(id)
+        )''')
+        self.conn.commit()
+        print(f"[+] Initialized SQLite database at {self.db_path}")
+
+    def vacuum(self):
+        self.connect()
+        self.conn.execute("VACUUM")
+        print(f"[+] Vacuumed database at {self.db_path}")
+
+class ThreatIntelEngine:
+    """Queries EOL and Vuln APIs"""
+    
+    @staticmethod
+    def check_eol(product_name: str) -> Dict[str, Any]:
+        """Check endoflife.date API. We try to guess the product slug."""
+        if not product_name:
+            return {'status': 'unknown'}
+            
+        slug = product_name.lower().replace(' ', '-').replace('.', '')
+        # Only check a few known products to avoid spamming the API in this PoC
+        known_slugs = ['python', 'nodejs', 'go', 'php', 'ruby', 'docker', 'kubernetes', 'ubuntu', 'alpine', 'electron']
+        
+        found_slug = None
+        for k in known_slugs:
+            if k in slug:
+                found_slug = k
+                break
+                
+        if not found_slug:
+            return {'status': 'unknown'}
+
+        api_url = f"https://endoflife.date/api/{found_slug}.json"
+        try:
+            req = urllib.request.Request(api_url, headers={'User-Agent': 'EnterpriseSCRM/1.0'})
+            with urllib.request.urlopen(req, timeout=3) as response:
+                if response.status == 200:
+                    data = json.loads(response.read().decode())
+                    if data and len(data) > 0:
+                        # Assuming the first entry is the latest cycle
+                        return {
+                            'status': 'success',
+                            # the eol property might be a date string, or boolean
+                            'is_eol': data[0].get('eol', False) != False, 
+                            'eol_date': str(data[0].get('eol', 'Unknown')),
+                            'latest_version': data[0].get('latest', 'Unknown')
+                        }
+        except Exception:
+            pass
+        return {'status': 'error'}
+
+    @staticmethod
+    def check_vulnerabilities(product_name: str) -> List[Dict]:
+        """Mock vulnerability checker"""
+        if not product_name:
+            return []
+        # If the app has "Adobe" or "Flash", mock a vuln
+        if "adobe" in product_name.lower():
+            return [{'cve_id': 'CVE-MOCK-1001', 'severity': 'HIGH', 'description': 'Mocked Adobe Vulnerability'}]
+        return []
+
+class EndpointScanner:
+    """Scans local endpoint for installed software"""
+    
+    LICENSED_PUBLISHERS = ['microsoft', 'adobe', 'autodesk', 'vmware', 'cisco', 'palo alto', 'fortinet', 'apple']
+
+    def __init__(self, db_manager: DatabaseManager):
+        self.db = db_manager
+        self.hostname = platform.node()
+        self.os_info = f"{platform.system()} {platform.release()}"
+
+    def run_scan(self):
+        self.db.connect()
+        cursor = self.db.conn.cursor()
+        
+        # Register asset
+        cursor.execute("INSERT INTO assets (hostname, os_info, last_scan) VALUES (?, ?, ?)",
+                       (self.hostname, self.os_info, datetime.utcnow().isoformat()))
+        asset_id = cursor.lastrowid
+        self.db.conn.commit()
+
+        print(f"[*] Scanning host: {self.hostname} ({self.os_info})")
+        apps = self._scan_os()
+        print(f"[*] Found {len(apps)} installed applications.")
+
+        for app in apps:
+            publisher = app.get('publisher', '') or ''
+            name = app.get('name', '') or ''
+            is_licensed = any(pub in publisher.lower() or pub in name.lower() for pub in self.LICENSED_PUBLISHERS)
+            
+            cursor.execute("INSERT INTO software (asset_id, name, version, publisher, is_licensed, install_path) VALUES (?, ?, ?, ?, ?, ?)",
+                           (asset_id, name, app.get('version'), publisher, is_licensed, app.get('path')))
+            software_id = cursor.lastrowid
+            
+            # EOL Check
+            eol_info = ThreatIntelEngine.check_eol(name)
+            if eol_info.get('status') == 'success':
+                cursor.execute("INSERT INTO eol_status (software_id, is_eol, eol_date, latest_version) VALUES (?, ?, ?, ?)",
+                               (software_id, eol_info.get('is_eol'), eol_info.get('eol_date'), eol_info.get('latest_version')))
+            
+            # Vuln Check
+            vulns = ThreatIntelEngine.check_vulnerabilities(name)
+            for v in vulns:
+                cursor.execute("INSERT INTO vulnerabilities (software_id, cve_id, severity, description) VALUES (?, ?, ?, ?)",
+                               (software_id, v['cve_id'], v['severity'], v['description']))
+                
+        self.db.conn.commit()
+        print(f"[+] Scan complete. Data saved to {self.db.db_path}")
+
+    def _scan_os(self) -> List[Dict]:
+        if sys.platform == 'darwin':
+            return self._scan_macos()
+        elif sys.platform == 'win32':
+            return self._scan_windows()
+        else:
+            print("[-] Unsupported OS for local scanning.")
+            return []
+
+    def _scan_macos(self) -> List[Dict]:
+        import plistlib
+        apps = []
+        app_dirs = ['/Applications', '/System/Applications']
+        for d in app_dirs:
+            if not os.path.exists(d): continue
+            for item in os.listdir(d):
+                if item.endswith('.app'):
+                    app_path = os.path.join(d, item)
+                    plist_path = os.path.join(app_path, 'Contents', 'Info.plist')
+                    if os.path.exists(plist_path):
+                        try:
+                            with open(plist_path, 'rb') as f:
+                                plist = plistlib.load(f)
+                                name = plist.get('CFBundleName', item.replace('.app', ''))
+                                version = plist.get('CFBundleShortVersionString', plist.get('CFBundleVersion', 'Unknown'))
+                                publisher = plist.get('CFBundleIdentifier', '').split('.')[1] if len(plist.get('CFBundleIdentifier', '').split('.')) > 1 else 'Unknown'
+                                apps.append({
+                                    'name': name,
+                                    'version': version,
+                                    'publisher': publisher,
+                                    'path': app_path
+                                })
+                        except Exception:
+                            pass
+        return apps
+
+    def _scan_windows(self) -> List[Dict]:
+        import winreg
+        apps = []
+        try:
+            # Check standard uninstall key
+            key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall")
+            for i in range(winreg.QueryInfoKey(key)[0]):
+                try:
+                    subkey_name = winreg.EnumKey(key, i)
+                    subkey = winreg.OpenKey(key, subkey_name)
+                    name = winreg.QueryValueEx(subkey, "DisplayName")[0]
+                    version = winreg.QueryValueEx(subkey, "DisplayVersion")[0]
+                    publisher = winreg.QueryValueEx(subkey, "Publisher")[0]
+                    apps.append({'name': name, 'version': version, 'publisher': publisher, 'path': ''})
+                except OSError:
+                    pass
+        except OSError:
+            pass
+        return apps
+
+class SBOMIntegrityAuditor:
+    def __init__(self, sbom_path: str):
+        self.sbom_path = sbom_path
+        self.components = []
         self.findings = []
+        self.ai_score = 0
+        self.reasons = []
 
-    def scan(self) -> Dict[str, Any]:
-        """Run complete supply chain analysis"""
-        print(f"🔍 Scanning supply chain: {self.repo_path}")
-
-        results = {
-            'repo_path': self.repo_path,
-            'scan_time': datetime.utcnow().isoformat(),
-            'maintainer_analysis': self.analyze_maintainers(),
-            'commit_anomalies': self.detect_commit_anomalies(),
-            'dependency_analysis': self.analyze_dependencies(),
-            'hijack_risk': self.assess_hijack_risk(),
-            'blast_radius': self.calculate_blast_radius(),
-            'weaponization_indicators': self.detect_weaponization(),
-            'overall_risk_score': 0,
-            'severity': 'unknown',
-            'recommendations': []
-        }
-
-        # Calculate overall risk
-        results['overall_risk_score'] = self.calculate_risk_score(results)
-        results['severity'] = self.get_severity(results['overall_risk_score'])
-        results['recommendations'] = self.generate_recommendations(results)
-
-        return results
-
-    def analyze_maintainers(self) -> Dict[str, Any]:
-        """Analyze maintainer trust and bus factor"""
+    def audit(self):
+        print(f"[*] Auditing SBOM: {self.sbom_path}")
         try:
-            # Get commit authors
-            cmd = f"cd {self.repo_path} && git shortlog -sn --all"
-            output = subprocess.check_output(cmd, shell=True, text=True)
-
-            authors = []
-            for line in output.strip().split('\n'):
-                parts = line.strip().split('\t')
-                if len(parts) == 2:
-                    count = int(parts[0])
-                    name = parts[1]
-                    authors.append({'name': name, 'commits': count})
-
-            total_commits = sum(a['commits'] for a in authors)
-
-            # Calculate bus factor (number of people who own 50% of commits)
-            sorted_authors = sorted(authors, key=lambda x: x['commits'], reverse=True)
-            cumulative = 0
-            bus_factor = 0
-            for author in sorted_authors:
-                cumulative += author['commits']
-                bus_factor += 1
-                if cumulative >= total_commits * 0.5:
-                    break
-
-            return {
-                'total_maintainers': len(authors),
-                'bus_factor': bus_factor,
-                'top_contributor_percentage': (sorted_authors[0]['commits'] / total_commits * 100) if authors else 0,
-                'risk_level': 'high' if bus_factor <= 2 else 'medium' if bus_factor <= 5 else 'low',
-                'maintainers': authors[:10]  # Top 10
-            }
+            with open(self.sbom_path, 'r') as f:
+                data = json.load(f)
         except Exception as e:
-            return {'error': str(e)}
+            print(f"[-] Failed to load SBOM: {e}")
+            return
+            
+        self.components = data.get('components', [])
+        print(f"[*] Found {len(self.components)} components.")
+        
+        for comp in self.components:
+            name = comp.get('name')
+            version = comp.get('version')
+            purl = comp.get('purl', '')
+            hashes = comp.get('hashes', [])
+            
+            # Check missing hashes
+            if not hashes:
+                self.ai_score += 10
+                self.reasons.append(f"Missing cryptographic hash for {name}@{version}")
+                
+            if 'pkg:pypi/' in purl:
+                self._verify_pypi(name, version, hashes)
+            elif 'pkg:npm/' in purl:
+                self._verify_npm(name, version, hashes)
 
-    def detect_commit_anomalies(self) -> Dict[str, Any]:
-        """Detect suspicious commits (AI-generated, obfuscated, etc.)"""
+        self._print_report()
+
+    def _verify_pypi(self, name: str, version: str, hashes: List[Dict]):
+        api_url = f"https://pypi.org/pypi/{name}/{version}/json"
         try:
-            cmd = f"cd {self.repo_path} && git log --all --pretty=format:'%H|%an|%ae|%s|%ai' -100"
-            output = subprocess.check_output(cmd, shell=True, text=True)
+            req = urllib.request.Request(api_url, headers={'User-Agent': 'EnterpriseSCRM/1.0'})
+            with urllib.request.urlopen(req, timeout=5) as response:
+                if response.status == 200:
+                    data = json.loads(response.read().decode())
+                    urls = data.get('urls', [])
+                    official_sha256 = None
+                    if urls:
+                        official_sha256 = urls[0].get('digests', {}).get('sha256')
+                        
+                    for h in hashes:
+                        if h.get('alg', '').upper() == 'SHA-256':
+                            if official_sha256 and h.get('content') != official_sha256:
+                                self.ai_score += 50
+                                self.reasons.append(f"Hash Mismatch for {name}@{version}: Expected {official_sha256[:8]}..., Got {h.get('content')[:8]}...")
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                self.ai_score += 30
+                self.reasons.append(f"Ghost Package/Version: PyPI returned 404 for {name}@{version}")
+        except Exception:
+            pass # Network error
 
-            anomalies = []
-            ai_indicators = ['gpt', 'copilot', 'assistant', 'generated', 'automated']
-            suspicious_patterns = ['obfuscate', 'hide', 'bypass', 'exploit']
-
-            for line in output.strip().split('\n'):
-                parts = line.split('|')
-                if len(parts) >= 4:
-                    commit_hash, author, email, message = parts[:4]
-
-                    # Check for AI-generated indicators
-                    if any(indicator in message.lower() for indicator in ai_indicators):
-                        anomalies.append({
-                            'commit': commit_hash[:8],
-                            'type': 'ai_generated',
-                            'message': message,
-                            'severity': 'medium'
-                        })
-
-                    # Check for suspicious patterns
-                    if any(pattern in message.lower() for pattern in suspicious_patterns):
-                        anomalies.append({
-                            'commit': commit_hash[:8],
-                            'type': 'suspicious_message',
-                            'message': message,
-                            'severity': 'high'
-                        })
-
-            return {
-                'total_commits_analyzed': len(output.strip().split('\n')),
-                'anomalies_found': len(anomalies),
-                'anomalies': anomalies
-            }
-        except Exception as e:
-            return {'error': str(e)}
-
-    def analyze_dependencies(self) -> Dict[str, Any]:
-        """Analyze dependency structure and risks"""
-        # Check for common dependency files
-        dep_files = {
-            'package.json': self.analyze_npm_deps,
-            'requirements.txt': self.analyze_pip_deps,
-            'go.mod': self.analyze_go_deps,
-            'Cargo.toml': self.analyze_rust_deps
-        }
-
-        results = {
-            'direct_dependencies': 0,
-            'transitive_dependencies': 0,
-            'total_dependencies': 0,
-            'outdated_dependencies': [],
-            'risky_dependencies': []
-        }
-
-        for file, analyzer in dep_files.items():
-            file_path = f"{self.repo_path}/{file}"
-            try:
-                with open(file_path, 'r') as f:
-                    dep_data = analyzer(f.read())
-                    results['direct_dependencies'] += dep_data.get('direct', 0)
-                    results['transitive_dependencies'] += dep_data.get('transitive', 0)
-            except FileNotFoundError:
-                continue
-
-        results['total_dependencies'] = results['direct_dependencies'] + results['transitive_dependencies']
-        return results
-
-    def analyze_npm_deps(self, content: str) -> Dict[str, int]:
-        """Analyze npm dependencies"""
+    def _verify_npm(self, name: str, version: str, hashes: List[Dict]):
+        api_url = f"https://registry.npmjs.org/{name}/{version}"
         try:
-            data = json.loads(content)
-            deps = data.get('dependencies', {})
-            dev_deps = data.get('devDependencies', {})
-            return {'direct': len(deps) + len(dev_deps), 'transitive': 0}
-        except:
-            return {'direct': 0, 'transitive': 0}
-
-    def analyze_pip_deps(self, content: str) -> Dict[str, int]:
-        """Analyze pip dependencies"""
-        lines = [l.strip() for l in content.split('\n') if l.strip() and not l.startswith('#')]
-        return {'direct': len(lines), 'transitive': 0}
-
-    def analyze_go_deps(self, content: str) -> Dict[str, int]:
-        """Analyze Go dependencies"""
-        requires = re.findall(r'require\s+\(([^)]+)\)', content)
-        if requires:
-            deps = [d.strip() for d in requires[0].split('\n') if d.strip()]
-            return {'direct': len(deps), 'transitive': 0}
-        return {'direct': 0, 'transitive': 0}
-
-    def analyze_rust_deps(self, content: str) -> Dict[str, int]:
-        """Analyze Rust dependencies"""
-        deps = re.findall(r'\[dependencies\]', content)
-        return {'direct': len(deps), 'transitive': 0}
-
-    def assess_hijack_risk(self) -> Dict[str, Any]:
-        """Assess dependency hijacking risk"""
-        return {
-            'typosquatting_risk': 'medium',
-            'namespace_confusion_risk': 'low',
-            'account_takeover_risk': 'low',
-            'overall_hijack_risk': 'medium',
-            'mitigation_suggestions': [
-                'Use dependency pinning',
-                'Enable 2FA for package registry accounts',
-                'Monitor for suspicious updates'
-            ]
-        }
-
-    def calculate_blast_radius(self) -> Dict[str, Any]:
-        """Calculate impact if dependency is compromised"""
-        return {
-            'direct_impact': 'high',
-            'transitive_impact': 'medium',
-            'downstream_projects_affected': 'unknown',
-            'blast_radius_score': 75
-        }
-
-    def detect_weaponization(self) -> Dict[str, Any]:
-        """Detect weaponized open-source patterns"""
-        indicators = []
-
-        # Check for common weaponization patterns
-        patterns = {
-            'install_scripts': ['install.sh', 'setup.sh', 'postinstall.js'],
-            'obfuscated_code': ['eval', 'exec', 'Function('],
-            'network_calls': ['http://', 'https://', 'fetch(', 'XMLHttpRequest'],
-            'file_operations': ['fs.writeFile', 'os.remove', 'shutil.rmtree']
-        }
-
-        for pattern_type, indicators_list in patterns.items():
-            # TODO: Scan files for these patterns
+            req = urllib.request.Request(api_url, headers={'User-Agent': 'EnterpriseSCRM/1.0'})
+            with urllib.request.urlopen(req, timeout=5) as response:
+                if response.status == 200:
+                    data = json.loads(response.read().decode())
+                    official_shasum = data.get('dist', {}).get('shasum')
+                    
+                    for h in hashes:
+                        if h.get('alg', '').upper() == 'SHA-1':
+                            if official_shasum and h.get('content') != official_shasum:
+                                self.ai_score += 50
+                                self.reasons.append(f"Hash Mismatch for {name}@{version}: Expected {official_shasum[:8]}..., Got {h.get('content')[:8]}...")
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                self.ai_score += 30
+                self.reasons.append(f"Ghost Package/Version: NPM returned 404 for {name}@{version}")
+        except Exception:
             pass
 
-        return {
-            'indicators_found': len(indicators),
-            'indicators': indicators,
-            'weaponization_likelihood': 'low'
-        }
-
-    def calculate_risk_score(self, results: Dict[str, Any]) -> int:
-        """Calculate overall risk score (0-100)"""
-        score = 0
-
-        # Maintainer risk
-        maintainer = results['maintainer_analysis']
-        if maintainer.get('bus_factor', 10) <= 2:
-            score += 30
-        elif maintainer.get('bus_factor', 10) <= 5:
-            score += 15
-
-        # Commit anomalies
-        anomalies = results['commit_anomalies'].get('anomalies_found', 0)
-        score += min(anomalies * 5, 20)
-
-        # Dependencies
-        deps = results['dependency_analysis'].get('total_dependencies', 0)
-        if deps > 100:
-            score += 20
-        elif deps > 50:
-            score += 10
-
-        # Blast radius
-        blast = results['blast_radius'].get('blast_radius_score', 0)
-        score += int(blast * 0.3)
-
-        return min(score, 100)
-
-    def get_severity(self, score: int) -> str:
-        """Get severity level from score"""
-        if score >= 80:
-            return 'critical'
-        elif score >= 60:
-            return 'high'
-        elif score >= 40:
-            return 'medium'
+    def _print_report(self):
+        probability = min(self.ai_score, 100)
+        print("\n" + "="*70)
+        print("SBOM PROVENANCE & INTEGRITY REPORT")
+        print("="*70)
+        
+        if probability >= 80:
+            print(f"🚨 ALERT: HIGH PROBABILITY OF AI FORGERY ({probability}%)")
+        elif probability >= 40:
+            print(f"⚠️  WARNING: SUSPICIOUS SBOM ANOMALIES DETECTED ({probability}%)")
         else:
-            return 'low'
+            print(f"✅ PASSED: Deterministic Provenance Verified ({probability}% anomaly score)")
+            
+        if self.reasons:
+            print("\nFindings:")
+            for r in self.reasons:
+                print(f" - {r}")
+        print("="*70 + "\n")
 
-    def generate_recommendations(self, results: Dict[str, Any]) -> List[str]:
-        """Generate security recommendations"""
-        recommendations = []
+def report_findings(db_path: str):
+    db = sqlite3.connect(db_path)
+    db.row_factory = sqlite3.Row
+    cursor = db.cursor()
+    
+    print("\n" + "="*70)
+    print("ENDPOINT SUPPLY CHAIN & VULNERABILITY REPORT")
+    print("="*70)
+    
+    cursor.execute("SELECT * FROM software WHERE is_licensed=1 LIMIT 10")
+    licensed = cursor.fetchall()
+    print(f"\n🔑 COMMERCIAL/LICENSED SOFTWARE ({len(licensed)} shown):")
+    for row in licensed:
+        print(f"   - {row['name']} v{row['version']} (Publisher: {row['publisher']})")
 
-        maintainer = results['maintainer_analysis']
-        if maintainer.get('bus_factor', 10) <= 2:
-            recommendations.append('Critical: Low bus factor detected. Consider increasing maintainer diversity.')
+    cursor.execute("""
+        SELECT s.name, s.version, e.eol_date, e.latest_version 
+        FROM software s JOIN eol_status e ON s.id = e.software_id 
+        WHERE e.is_eol != 0
+    """)
+    eol_apps = cursor.fetchall()
+    print(f"\n⏰ END-OF-LIFE (EOL) SOFTWARE ({len(eol_apps)}):")
+    if not eol_apps:
+        print("   ✅ No EOL software detected.")
+    for row in eol_apps:
+        print(f"   ⚠️  [EOL] {row['name']} v{row['version']} (EOL Date: {row['eol_date']}, Latest: {row['latest_version']})")
 
-        if results['commit_anomalies'].get('anomalies_found', 0) > 0:
-            recommendations.append('Review flagged commits for suspicious activity.')
-
-        deps = results['dependency_analysis'].get('total_dependencies', 0)
-        if deps > 50:
-            recommendations.append(f'High dependency count ({deps}). Consider dependency pruning.')
-
-        return recommendations
-
+    cursor.execute("""
+        SELECT s.name, v.cve_id, v.severity, v.description 
+        FROM software s JOIN vulnerabilities v ON s.id = v.software_id
+    """)
+    vulns = cursor.fetchall()
+    print(f"\n🛑 KNOWN VULNERABILITIES ({len(vulns)}):")
+    if not vulns:
+        print("   ✅ No vulnerabilities detected in scanned software.")
+    for row in vulns:
+        print(f"   ❌ {row['name']} - {row['cve_id']} ({row['severity']}): {row['description']}")
+    
+    print("\n" + "="*70)
 
 def main():
-    """CLI entry point"""
-    import sys
+    parser = argparse.ArgumentParser(description="Endpoint SCRM & Vulnerability Scanner")
+    subparsers = parser.add_subparsers(dest="command", help="Commands")
 
-    if len(sys.argv) < 2:
-        print("Usage: python scanner.py <repo_path>")
-        sys.exit(1)
+    # DB command
+    db_parser = subparsers.add_parser("db", help="Database management")
+    db_parser.add_argument("--init", help="Initialize database at path")
+    db_parser.add_argument("--vacuum", help="Vacuum database at path")
 
-    repo_path = sys.argv[1]
-    scanner = SupplyChainScanner(repo_path)
-    results = scanner.scan()
+    # Scan command
+    scan_parser = subparsers.add_parser("scan", help="Run scanner")
+    scan_parser.add_argument("--local", action="store_true", help="Scan local endpoint applications")
+    scan_parser.add_argument("--db", required=True, help="Path to SQLite database")
 
-    print("\n" + "="*60)
-    print("SUPPLY CHAIN SECURITY ANALYSIS REPORT")
-    print("="*60)
-    print(f"\nRepository: {results['repo_path']}")
-    print(f"Scan Time: {results['scan_time']}")
-    print(f"\n🎯 Overall Risk Score: {results['overall_risk_score']}/100")
-    print(f"🚨 Severity: {results['severity'].upper()}")
+    # SBOM Audit command
+    audit_parser = subparsers.add_parser("audit-sbom", help="Audit SBOM for AI forgery or integrity anomalies")
+    audit_parser.add_argument("--file", required=True, help="Path to CycloneDX JSON SBOM")
 
-    print(f"\n👥 Maintainer Analysis:")
-    print(f"   - Total Maintainers: {results['maintainer_analysis'].get('total_maintainers', 0)}")
-    print(f"   - Bus Factor: {results['maintainer_analysis'].get('bus_factor', 0)}")
-    print(f"   - Risk Level: {results['maintainer_analysis'].get('risk_level', 'unknown')}")
+    args = parser.parse_args()
 
-    print(f"\n🔍 Commit Anomalies:")
-    print(f"   - Commits Analyzed: {results['commit_anomalies'].get('total_commits_analyzed', 0)}")
-    print(f"   - Anomalies Found: {results['commit_anomalies'].get('anomalies_found', 0)}")
+    if args.command == "db":
+        if args.init:
+            mgr = DatabaseManager(args.init)
+            mgr.init_db()
+        elif args.vacuum:
+            mgr = DatabaseManager(args.vacuum)
+            mgr.vacuum()
+        else:
+            db_parser.print_help()
 
-    print(f"\n📦 Dependencies:")
-    print(f"   - Direct: {results['dependency_analysis'].get('direct_dependencies', 0)}")
-    print(f"   - Transitive: {results['dependency_analysis'].get('transitive_dependencies', 0)}")
-    print(f"   - Total: {results['dependency_analysis'].get('total_dependencies', 0)}")
+    elif args.command == "scan":
+        mgr = DatabaseManager(args.db)
+        if not os.path.exists(args.db):
+            print(f"[-] Database {args.db} does not exist. Run 'db --init {args.db}' first.")
+            sys.exit(1)
+            
+        if args.local:
+            scanner = EndpointScanner(mgr)
+            scanner.run_scan()
+            report_findings(args.db)
 
-    if results['recommendations']:
-        print(f"\n💡 Recommendations:")
-        for i, rec in enumerate(results['recommendations'], 1):
-            print(f"   {i}. {rec}")
+    elif args.command == "audit-sbom":
+        auditor = SBOMIntegrityAuditor(args.file)
+        auditor.audit()
 
-    # Save full report
-    report_file = f"supply_chain_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-    with open(report_file, 'w') as f:
-        json.dump(results, f, indent=2)
-    print(f"\n📄 Full report saved to: {report_file}")
-    print("="*60)
-
+    else:
+        parser.print_help()
 
 if __name__ == '__main__':
     main()
