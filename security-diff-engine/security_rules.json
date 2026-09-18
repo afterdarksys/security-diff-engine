@@ -1,166 +1,23 @@
-{
-  "rules": [
-    {
-      "id": "PY_RCE_EVAL",
-      "description": "Use of eval() detected in Python",
-      "pattern": "\\beval\\s*\\(",
-      "type": "vulnerability",
-      "risk_points": 20,
-      "severity": "critical",
-      "languages": [".py"]
-    },
-    {
-      "id": "PY_RCE_EXEC",
-      "description": "Use of exec() detected in Python",
-      "pattern": "\\bexec\\s*\\(",
-      "type": "vulnerability",
-      "risk_points": 20,
-      "severity": "critical",
-      "languages": [".py"]
-    },
-    {
-      "id": "PY_RCE_OS_SYSTEM",
-      "description": "Use of os.system() detected",
-      "pattern": "\\bos\\.system\\s*\\(",
-      "type": "vulnerability",
-      "risk_points": 20,
-      "severity": "critical",
-      "languages": [".py"]
-    },
-    {
-      "id": "PY_RCE_SUBPROCESS_SHELL",
-      "description": "Subprocess with shell=True detected",
-      "pattern": "subprocess\\.(Popen|call|run)\\(.*shell\\s*=\\s*True",
-      "type": "vulnerability",
-      "risk_points": 20,
-      "severity": "critical",
-      "languages": [".py"]
-    },
-    {
-      "id": "PY_INSECURE_DESERIALIZATION",
-      "description": "Insecure deserialization (pickle) detected",
-      "pattern": "\\bpickle\\.loads\\s*\\(",
-      "type": "vulnerability",
-      "risk_points": 15,
-      "severity": "high",
-      "languages": [".py"]
-    },
-    {
-      "id": "SQLI_FSTRING",
-      "description": "Potential SQL Injection (string formatting in SQL)",
-      "pattern": "(?i)[\"'].*(SELECT|INSERT|UPDATE|DELETE).*{.*}[\"']",
-      "type": "vulnerability",
-      "risk_points": 15,
-      "severity": "high",
-      "languages": [".py", ".go", ".js", ".ts"]
-    },
-    {
-      "id": "JS_RCE_EVAL",
-      "description": "Use of eval() detected in JS/TS",
-      "pattern": "\\beval\\s*\\(",
-      "type": "vulnerability",
-      "risk_points": 20,
-      "severity": "critical",
-      "languages": [".js", ".ts", ".jsx", ".tsx"]
-    },
-    {
-      "id": "JS_XSS_REACT",
-      "description": "Potential XSS (dangerouslySetInnerHTML)",
-      "pattern": "\\bdangerouslySetInnerHTML\\b",
-      "type": "vulnerability",
-      "risk_points": 15,
-      "severity": "high",
-      "languages": [".js", ".ts", ".jsx", ".tsx"]
-    },
-    {
-      "id": "JS_RCE_EXEC",
-      "description": "Use of child_process.exec() detected",
-      "pattern": "\\bexec\\s*\\(",
-      "type": "vulnerability",
-      "risk_points": 20,
-      "severity": "critical",
-      "languages": [".js", ".ts"]
-    },
-    {
-      "id": "C_UNSAFE_FUNCTIONS",
-      "description": "Use of unsafe C string function (e.g. strcpy, sprintf)",
-      "pattern": "\\b(strcpy|strcat|sprintf|gets)\\b\\s*\\(",
-      "type": "vulnerability",
-      "risk_points": 20,
-      "severity": "high",
-      "languages": [".c", ".cpp", ".h", ".hpp"]
-    },
-    {
-      "id": "GO_UNHANDLED_ERROR",
-      "description": "Potential unhandled error in Go (ignoring return value)",
-      "pattern": "_\\s*,\\s*err\\s*:=",
-      "type": "vulnerability",
-      "risk_points": 10,
-      "severity": "medium",
-      "languages": [".go"]
-    },
-    {
-      "id": "GO_UNSAFE_IMPORT",
-      "description": "Importing unsafe package in Go",
-      "pattern": "import\\s+.*\"unsafe\"",
-      "type": "vulnerability",
-      "risk_points": 15,
-      "severity": "high",
-      "languages": [".go"]
-    },
-    {
-      "id": "HARDCODED_SECRET_AWS",
-      "description": "Hardcoded AWS Access Key",
-      "pattern": "(AKIA[0-9A-Z]{16})",
-      "type": "vulnerability",
-      "risk_points": 25,
-      "severity": "critical",
-      "languages": []
-    },
-    {
-      "id": "HARDCODED_PASSWORD",
-      "description": "Hardcoded Password",
-      "pattern": "(?i)(password|passwd|pwd|secret|token|api_key)\\s*[:=]\\s*['\"][^'\"]{5,}['\"]",
-      "type": "vulnerability",
-      "risk_points": 15,
-      "severity": "high",
-      "languages": []
-    },
-    {
-      "id": "EVIL_REGEX_NESTED",
-      "description": "Potential ReDoS (nested quantifiers)",
-      "pattern": "(\\([^\\)]+\\+[*+]\\)|\\([^\\)]+\\*[*+]\\))",
-      "type": "vulnerability",
-      "risk_points": 15,
-      "severity": "high",
-      "languages": []
-    },
-    {
-      "id": "PROT_CSRF",
-      "description": "CSRF Protection",
-      "pattern": "(@csrf_protect|csrf_token|csurf\\(\\))",
-      "type": "protection",
-      "risk_points": -5,
-      "severity": "low",
-      "languages": [".py", ".js", ".ts"]
-    },
-    {
-      "id": "PROT_LOGIN",
-      "description": "Authentication Required",
-      "pattern": "(@login_required|isAuthenticated|jwt\\.verify)",
-      "type": "protection",
-      "risk_points": -10,
-      "severity": "medium",
-      "languages": []
-    },
-    {
-      "id": "PROT_ESCAPE",
-      "description": "HTML Escaping",
-      "pattern": "\\b(escape|html\\.escape|sanitizeHtml)\\s*\\(",
-      "type": "protection",
-      "risk_points": -5,
-      "severity": "low",
-      "languages": []
-    }
-  ]
-}
+{"rules":[
+{"id":"PY-EVAL","title":"Dynamic Python evaluation","description":"eval() executes attacker-controlled expressions when its input is not trusted.","severity":"high","pattern":"\\beval\\s*\\(","file_types":["python"],"remediation":"Replace with a constrained parser or explicit allow-list."},
+{"id":"PY-EXEC","title":"Dynamic Python execution","description":"exec() executes arbitrary Python source.","severity":"critical","pattern":"\\bexec\\s*\\(","file_types":["python"],"remediation":"Remove dynamic execution; dispatch through explicit functions."},
+{"id":"PY-SHELL-TRUE","title":"Shell-enabled subprocess","description":"shell=True can turn untrusted values into shell commands.","severity":"critical","pattern":"\\bshell\\s*=\\s*True","file_types":["python"],"remediation":"Pass an argument list with shell=False and validate inputs."},
+{"id":"PY-PICKLE","title":"Unsafe Python deserialization","description":"pickle can execute code while loading untrusted data.","severity":"high","pattern":"\\bpickle\\.loads?\\s*\\(","file_types":["python"],"remediation":"Use JSON or a schema-validated data format."},
+{"id":"PY-YAML-LOAD","title":"Unsafe YAML load","description":"yaml.load without SafeLoader can construct unsafe objects.","severity":"high","pattern":"\\byaml\\.load\\s*\\(","file_types":["python"],"remediation":"Use yaml.safe_load or SafeLoader."},
+{"id":"PY-TLS-VERIFY","title":"TLS verification disabled","description":"Disabling certificate verification permits machine-in-the-middle attacks.","severity":"high","pattern":"\\bverify\\s*=\\s*False","file_types":["python"],"remediation":"Verify certificates and install the required CA."},
+{"id":"SH-EVAL","title":"Shell eval","description":"eval reinterprets data as shell source.","severity":"critical","pattern":"(^|[;&|]\\s*)eval\\s","file_types":["shell"],"remediation":"Avoid eval; use arrays and fixed command dispatch."},
+{"id":"SH-CURL-PIPE","title":"Remote script piped to shell","description":"Piping a network response directly into a shell executes unreviewed remote content.","severity":"critical","pattern":"\\b(?:curl|wget)\\b[^\\n]*(?:\\||\\|\\s*)\\s*(?:ba)?sh\\b","file_types":["shell"],"remediation":"Download, verify a pinned checksum/signature, then execute deliberately."},
+{"id":"SH-RM-ROOT","title":"Dangerous recursive deletion","description":"A recursive forced deletion targets a root-like path.","severity":"critical","pattern":"\\brm\\s+-[^\\n]*r[^\\n]*f[^\\n]*\\s+/(?:\\s|$|\\*)","file_types":["shell"],"remediation":"Use a validated, explicit non-root path and guard variables."},
+{"id":"SH-WORLD-WRITE","title":"World-writable permission","description":"chmod 777 grants write access to every local user.","severity":"high","pattern":"\\bchmod\\s+(?:-R\\s+)?777\\b","file_types":["shell"],"remediation":"Use least-privilege modes such as 750 or 640."},
+{"id":"TF-PUBLIC-CIDR","title":"Terraform public network exposure","description":"A security group or firewall rule permits all IPv4 addresses.","severity":"high","pattern":"\\bcidr_blocks\\s*=\\s*\\[?\\s*[\"']0\\.0\\.0\\.0/0","file_types":["terraform"],"remediation":"Restrict source CIDRs to required networks."},
+{"id":"TF-PUBLIC-ACL","title":"Terraform public ACL","description":"A Terraform ACL is configured as publicly readable or writable.","severity":"high","pattern":"\\bacl\\s*=\\s*[\"']public-(?:read|read-write)[\"']","file_types":["terraform"],"remediation":"Use private ACLs and explicit, least-privilege policies."},
+{"id":"TF-VERIFY-FALSE","title":"Terraform TLS verification disabled","description":"Provider TLS certificate checks are disabled.","severity":"high","pattern":"\\b(?:insecure|skip_tls_verify)\\s*=\\s*true","file_types":["terraform"],"remediation":"Enable certificate validation and configure a trusted CA."},
+{"id":"TF-HARDCODED-SECRET","title":"Terraform hardcoded secret","description":"A likely secret is embedded directly in infrastructure code.","severity":"high","pattern":"\\b(?:password|secret|token|api_key)\\s*=\\s*[\"'][^\"']{8,}[\"']","file_types":["terraform"],"remediation":"Read secrets from a managed secret store or protected variable."},
+{"id":"ANS-SHELL","title":"Ansible shell module","description":"shell module commands are susceptible to injection and quoting errors.","severity":"medium","pattern":"^\\s*(?:ansible\\.builtin\\.)?shell\\s*:","file_types":["ansible"],"remediation":"Use command module with argv where shell features are unnecessary."},
+{"id":"ANS-IGNORE-ERRORS","title":"Ansible errors ignored","description":"ignore_errors can conceal failed security controls or deployment steps.","severity":"medium","pattern":"^\\s*ignore_errors\\s*:\\s*(?:yes|true)\\b","file_types":["ansible"],"remediation":"Handle expected failures explicitly with failed_when."},
+{"id":"ANS-TLS-VERIFY","title":"Ansible TLS verification disabled","description":"Certificate validation is disabled in an Ansible task.","severity":"high","pattern":"^\\s*(?:validate_certs|verify_ssl)\\s*:\\s*(?:no|false)\\b","file_types":["ansible"],"remediation":"Enable validation and supply the appropriate CA."},
+{"id":"ANS-WORLD-WRITE","title":"Ansible world-writable file","description":"A task sets a world-writable file mode.","severity":"high","pattern":"^\\s*mode\\s*:\\s*[\"']?0?777[\"']?","file_types":["ansible"],"remediation":"Use least-privilege file modes."},
+{"id":"SECRET-AWS","title":"AWS access key identifier","description":"An AWS access key identifier was added.","severity":"critical","pattern":"\\b(?:AKIA|ASIA)[0-9A-Z]{16}\\b","file_types":["generic"],"remediation":"Revoke the key immediately and use environment or workload credentials."},
+{"id":"SECRET-PRIVATE-KEY","title":"Private key material","description":"A private key marker was added.","severity":"critical","pattern":"-----BEGIN (?:RSA |EC |OPENSSH |)?PRIVATE KEY-----","file_types":["generic"],"remediation":"Remove and rotate the key; store it in a secret manager."},
+{"id":"AUTH-GUARD-REMOVED","title":"Authentication guard removed","description":"An authentication guard was removed from a changed line.","severity":"medium","pattern":"(?:@login_required|\\bisAuthenticated\\b|jwt\\.verify)","file_types":["generic"],"remediation":"Confirm the endpoint remains protected by an equivalent control.","kind":"protection"}
+]}
